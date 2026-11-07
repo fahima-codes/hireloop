@@ -2,23 +2,26 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Code, Mail } from 'lucide-react';
+import { Briefcase, Building2, Code, Mail, ShieldCheck } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 type AuthMode = 'sign-in' | 'sign-up';
 
+export type UserRole = 'seeker' | 'recruiter' | 'admin';
+
 type FormData = {
   name: string;
   email: string;
   password: string;
+  role: UserRole;
 };
 
 // প্রপসের টাইপ ঠিক করা হলো যাতে onSubmit ফাংশনটি গ্রহণ করা যায়
 type AuthFormProps = {
   mode: AuthMode;
-  onSubmit?: (data: FormData) => void;
+  onSubmit?: (data: FormData) => void | Promise<void>;
 };
 
 const modes: { value: AuthMode; label: string; href: string }[] = [
@@ -31,6 +34,32 @@ const inputClass =
 
 const labelClass = 'mb-1.5 block text-[13px] font-medium text-zinc-400';
 
+const roleOptions: {
+  value: UserRole;
+  label: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
+  {
+    value: 'seeker',
+    label: 'Job Seeker',
+    description: 'Find and apply to jobs',
+    icon: Briefcase,
+  },
+  {
+    value: 'recruiter',
+    label: 'Recruiter',
+    description: 'Hire top talent',
+    icon: Building2,
+  },
+  {
+    value: 'admin',
+    label: 'Admin',
+    description: 'Manage the platform',
+    icon: ShieldCheck,
+  },
+];
+
 export function AuthForm({ mode, onSubmit }: AuthFormProps) {
   // 👈 এখানে onSubmit রিসিভ করা হলো
   const router = useRouter();
@@ -40,7 +69,11 @@ export function AuthForm({ mode, onSubmit }: AuthFormProps) {
     name: '',
     email: '',
     password: '',
+    role: 'seeker',
   });
+
+  // submit চলাকালীন button disable করে duplicate request আটকায়
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -161,6 +194,63 @@ export function AuthForm({ mode, onSubmit }: AuthFormProps) {
                 className={inputClass}
               />
             </div>
+
+            {isSignUp && (
+              <div>
+                <span id="role-label" className={labelClass}>
+                  I am a
+                </span>
+                <div
+                  role="radiogroup"
+                  aria-labelledby="role-label"
+                  className="grid grid-cols-3 gap-2"
+                >
+                  {roleOptions.map(option => {
+                    const Icon = option.icon;
+                    const selected = formData.role === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() =>
+                          setFormData(prev => ({
+                            ...prev,
+                            role: option.value,
+                          }))
+                        }
+                        className={
+                          selected
+                            ? 'flex flex-col items-center gap-1 rounded-xl border border-indigo-500/50 bg-indigo-500/15 px-2 py-3 outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50'
+                            : 'flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-white/[0.04] px-2 py-3 outline-none transition-colors hover:bg-white/10 focus-visible:ring-3 focus-visible:ring-ring/50'
+                        }
+                      >
+                        <Icon
+                          className={
+                            selected
+                              ? 'size-4 text-indigo-400'
+                              : 'size-4 text-zinc-500'
+                          }
+                        />
+                        <span
+                          className={
+                            selected
+                              ? 'text-xs font-medium text-zinc-100'
+                              : 'text-xs text-zinc-400'
+                          }
+                        >
+                          {option.label}
+                        </span>
+                        <span className="text-center text-[10px] leading-tight text-zinc-500">
+                          {option.description}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           <Button

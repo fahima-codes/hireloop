@@ -14,8 +14,9 @@ export const auth = betterAuth({
   user: {
     additionalFields: {
       role: {
-        type: 'string',
-        input: false,
+        type: 'string', // better-auth fields are single primitives, not arrays
+        input: true, // client sign-up request থেকে role পাঠানো যাবে
+        defaultValue: 'seeker', // ফর্মের default
       },
     },
   },

@@ -1,12 +1,13 @@
 'use client';
 import { authClient } from '@/lib/auth-client';
-import { AuthForm } from '../auth-form';
+import { AuthForm, type UserRole } from '../auth-form';
 
 // ইন্টারফেসের নাম পরিবর্তন করে AuthFormData করা হলো যাতে কম্পোনেন্টের নামের সাথে না মিলে যায়
 interface AuthFormData {
   name?: string;
   email: string;
   password: string;
+  role: UserRole;
 }
 
 export default function SignUpPage() {
@@ -15,6 +16,7 @@ export default function SignUpPage() {
       name: data.name || '',
       email: data.email,
       password: data.password,
+      role: data.role, // extra user field — lib/auth.ts-এর user.additionalFields-এ define করা আছে
       callbackURL: '/',
     });
 
