@@ -80,12 +80,18 @@ export function AuthForm({ mode, onSubmit }: AuthFormProps) {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isSubmitting) return; // চলমান submit থাকলে আবার চলবে না
 
     // 👈 যদি SignUpPage থেকে onSubmit ফাংশন পাঠানো হয়ে থাকে, তবে বর্তমান ফর্মের ডেটা সহ সেটি কল হবে
     if (onSubmit) {
-      onSubmit(formData);
+      setIsSubmitting(true);
+      try {
+        await onSubmit(formData);
+      } finally {
+        setIsSubmitting(false);
+      }
     } else {
       console.log(isSignUp ? 'sign-up data' : 'sign-in data', formData);
     }
@@ -255,9 +261,16 @@ export function AuthForm({ mode, onSubmit }: AuthFormProps) {
 
           <Button
             type="submit"
+            disabled={isSubmitting}
             className="mt-6 h-10 w-full rounded-xl bg-indigo-500 text-sm text-white hover:bg-indigo-400"
           >
-            {isSignUp ? 'Create Account' : 'Sign In'}
+            {isSubmitting
+              ? isSignUp
+                ? 'Creating account…'
+                : 'Signing in…'
+              : isSignUp
+                ? 'Create Account'
+                : 'Sign In'}
           </Button>
         </form>
 

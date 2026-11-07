@@ -1,8 +1,8 @@
 'use client';
 import { authClient } from '@/lib/auth-client';
 import { AuthForm, type UserRole } from '../auth-form';
-
-// ইন্টারফেসের নাম পরিবর্তন করে AuthFormData করা হলো যাতে কম্পোনেন্টের নামের সাথে না মিলে যায়
+import { useRouter } from 'next/navigation';
+// ইন্টারফেসের নাম পরিবর্তন করে AuthFormData করা হলো যাতে কম্পোনেন্টের নামের সাথে না মিলে যায়
 interface AuthFormData {
   name?: string;
   email: string;
@@ -11,6 +11,7 @@ interface AuthFormData {
 }
 
 export default function SignUpPage() {
+  const router = useRouter();
   const handleSignUp = async (data: AuthFormData) => {
     const { data: signUpResponse, error } = await authClient.signUp.email({
       name: data.name || '',
@@ -21,6 +22,9 @@ export default function SignUpPage() {
     });
 
     console.log('sign up response', signUpResponse, error);
+    if (!error) {
+      router.push('/');
+    }
   };
 
   // এখানে onSubmit প্রপস হিসেবে handleSignUp ফাংশনটি পাঠানো হচ্ছে

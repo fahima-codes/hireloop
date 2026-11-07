@@ -1,10 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { Globe, Menu, X } from 'lucide-react';
+import Link from 'next/link';
+import Image from 'next/image'; // 👈 ১. Next.js Image কম্পোনেন্ট ইম্পোর্ট করা হলো
+import { useRouter } from 'next/navigation';
+import { Menu, X, LogOut } from 'lucide-react';
 import { cn } from 'cn';
 
 import { Button } from '@/components/ui/button';
+import { authClient } from '@/lib/auth-client';
+
+// better-auth থেকে inferred session type — 'any' ব্যবহারের দরকার নেই
+type Session = typeof authClient.$Infer.Session;
 
 const navLinks = [
   { label: 'Browse Jobs', href: '#', active: true },
@@ -14,22 +21,16 @@ const navLinks = [
 
 function Logo() {
   return (
-    <a
-      href="#"
-      className="flex shrink-0 items-center rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-    >
-      <span className="text-lg font-bold leading-none tracking-tight">
-        <span className="text-sky-400">hire</span>
-        <span className="text-orange-500">l</span>
-        {/* Globe stands in for the second "o" of "loop" */}
-        <Globe
-          aria-hidden="true"
-          className="mx-px inline-block size-[18px] translate-y-0.5 text-sky-400"
-          strokeWidth={2.5}
-        />
-        <span className="text-orange-500">p</span>
-      </span>
-    </a>
+    <Link href="/" className="">
+      {/* 👈 ২. আপনার পাবলিক ফোল্ডার থেকে লোগো ইমেজটি যোগ করা হলো */}
+      <Image
+        src="/images/logo.png" // আপনার ফাইলের নাম অনুযায়ী পরিবর্তন করতে পারেন (যেমন: logo.svg বা logo.jpg)
+        alt="HireLoop Logo"
+        width={100}
+        height={100}
+        className="object-contain"
+      />
+    </Link>
   );
 }
 
@@ -37,11 +38,17 @@ const linkClass =
   'rounded-lg px-3 py-1.5 text-sm outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50';
 const idleLinkClass = 'text-zinc-400 hover:bg-white/5 hover:text-zinc-100';
 
-function DesktopLinks() {
+function DesktopLinks({
+  session,
+  onSignOut,
+}: {
+  session: Session | null;
+  onSignOut: () => void;
+}) {
   return (
     <nav aria-label="Main" className="flex items-center gap-0.5">
       {navLinks.map(link => (
-        <a
+        <Link
           key={link.label}
           href={link.href}
           className={cn(
@@ -50,27 +57,59 @@ function DesktopLinks() {
           )}
         >
           {link.label}
-        </a>
+        </Link>
       ))}
       <span aria-hidden="true" className="mx-1.5 h-5 w-px bg-white/10" />
-      <a href="#" className={cn(linkClass, 'text-zinc-200 hover:text-zinc-50')}>
-        Sign In
-      </a>
-      <Button className="ml-1 h-9 rounded-lg bg-indigo-500 px-4 text-white hover:bg-indigo-400">
-        Get Started
-      </Button>
+
+      {session?.user ? (
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-emerald-400 px-2">
+            Welcome, {session.user.name}
+          </span>
+          <Button
+            variant="ghost"
+            onClick={onSignOut}
+            className="h-8 rounded-lg border border-white/10 bg-white/ text-xs text-zinc-400 hover:bg-red-500/10 hover:text-red-400 px-3 transition-colors"
+          >
+            <LogOut className="size-3.5 mr-1" />
+            Sign Out
+          </Button>
+        </div>
+      ) : (
+        <>
+          <Link
+            href="/sign-in"
+            className={cn(linkClass, 'text-zinc-200 hover:text-zinc-50')}
+          >
+            Sign In
+          </Link>
+          <Link href="/sign-up">
+            <Button className="ml-1 h-9 rounded-lg bg-indigo-500 px-4 text-white hover:bg-indigo-400">
+              Get Started
+            </Button>
+          </Link>
+        </>
+      )}
     </nav>
   );
 }
 
-function MobileLinks({ onNavigate }: { onNavigate: () => void }) {
+function MobileLinks({
+  onNavigate,
+  session,
+  onSignOut,
+}: {
+  onNavigate: () => void;
+  session: Session | null;
+  onSignOut: () => void;
+}) {
   return (
     <nav
       aria-label="Mobile"
       className="mx-4 mt-2 flex flex-col items-stretch gap-0.5 rounded-xl border border-white/10 bg-zinc-950 p-2 md:hidden"
     >
       {navLinks.map(link => (
-        <a
+        <Link
           key={link.label}
           href={link.href}
           onClick={onNavigate}
@@ -80,35 +119,68 @@ function MobileLinks({ onNavigate }: { onNavigate: () => void }) {
           )}
         >
           {link.label}
-        </a>
+        </Link>
       ))}
       <span aria-hidden="true" className="my-1 h-px bg-white/10" />
-      <a
-        href="#"
-        onClick={onNavigate}
-        className={cn(linkClass, 'text-zinc-200 hover:text-zinc-50')}
-      >
-        Sign In
-      </a>
-      <Button
-        onClick={onNavigate}
-        className="mt-1 h-9 rounded-lg bg-indigo-500 text-white hover:bg-indigo-400"
-      >
-        Get Started
-      </Button>
+
+      {session?.user ? (
+        <div className="flex flex-col gap-2 p-2">
+          <div className="text-sm font-medium text-emerald-400 text-center py-1.5 border border-emerald-500/10 bg-emerald-500/5 rounded-lg">
+            Welcome, {session.user.name}
+          </div>
+          <Button
+            onClick={() => {
+              onSignOut();
+              onNavigate();
+            }}
+            className="h-9 w-full rounded-lg bg-red-500/20 text-sm text-red-400 border border-red-500/20 hover:bg-red-500/30"
+          >
+            <LogOut className="size-4 mr-1.5" />
+            Sign Out
+          </Button>
+        </div>
+      ) : (
+        <>
+          <Link
+            href="/sign-in"
+            onClick={onNavigate}
+            className={cn(linkClass, 'text-zinc-200 hover:text-zinc-50')}
+          >
+            Sign In
+          </Link>
+          <Link href="/sign-up" onClick={onNavigate}>
+            <Button className="mt-1 h-9 w-full rounded-lg bg-indigo-500 text-white hover:bg-indigo-400">
+              Get Started
+            </Button>
+          </Link>
+        </>
+      )}
     </nav>
   );
 }
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const { data: session } = authClient.useSession();
+
+  const handleSignOut = async () => {
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          router.push('/sign-in');
+          router.refresh();
+        },
+      },
+    });
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-zinc-950 px-4 py-3 sm:px-6">
       <div className="relative flex items-center justify-between">
         <Logo />
-        <div className="hidden items-center gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-1.5 pr-1.5 md:flex">
-          <DesktopLinks />
+        <div className="hidden items-center gap-1 rounded-xl border border-white/10 bg-white/ p-1.5 pr-1.5 md:flex">
+          <DesktopLinks session={session} onSignOut={handleSignOut} />
         </div>
         <button
           type="button"
@@ -120,7 +192,13 @@ export function Navbar() {
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
       </div>
-      {open && <MobileLinks onNavigate={() => setOpen(false)} />}
+      {open && (
+        <MobileLinks
+          onNavigate={() => setOpen(false)}
+          session={session}
+          onSignOut={handleSignOut}
+        />
+      )}
     </header>
   );
 }
