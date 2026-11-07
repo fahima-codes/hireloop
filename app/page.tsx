@@ -1,12 +1,15 @@
-import Image from "next/image";
-import { MapPin, Search } from "lucide-react";
+import Image from 'next/image';
+import { MapPin, Search } from 'lucide-react';
 
-const trendingPositions = ["Product Designer", "AI Engineering", "DevOps Engineer"];
+const trendingPositions = [
+  'Product Designer',
+  'AI Engineering',
+  'DevOps Engineer',
+];
 
 export default function Home() {
   return (
     <main className="relative flex-1 overflow-hidden bg-[#060609]">
-      {/* soft haze in the top corners, matching the design's vignette */}
       <div
         aria-hidden
         className="pointer-events-none absolute -top-32 left-[-15%] h-[420px] w-[560px] rounded-full bg-zinc-400/10 blur-[120px]"
@@ -17,7 +20,6 @@ export default function Home() {
       />
 
       <section className="relative z-10 mx-auto flex w-full max-w-3xl flex-col items-center px-6 pt-14 text-center sm:pt-16">
-        {/* "50,000+ new jobs" announcement */}
         <div className="flex w-full items-center justify-center gap-2">
           <span
             aria-hidden
@@ -46,7 +48,6 @@ export default function Home() {
           thousands of curated opportunities and land your next role — faster.
         </p>
 
-        {/* job search */}
         <form action="/" className="mt-9 w-full max-w-[640px]">
           <div className="flex items-center gap-1 rounded-2xl border border-white/10 bg-white/[0.035] p-2 transition-colors focus-within:border-white/20">
             <div className="flex min-w-0 flex-1 items-center gap-2 px-3">
@@ -59,7 +60,10 @@ export default function Home() {
                 className="w-full min-w-0 bg-transparent text-sm text-zinc-200 placeholder:text-zinc-500 focus:outline-none"
               />
             </div>
-            <div aria-hidden className="hidden h-7 w-px shrink-0 bg-white/10 sm:block" />
+            <div
+              aria-hidden
+              className="hidden h-7 w-px shrink-0 bg-white/10 sm:block"
+            />
             <div className="hidden min-w-0 items-center gap-2 px-2 sm:flex sm:w-48">
               <MapPin className="size-4 shrink-0 text-zinc-500" aria-hidden />
               <input
@@ -80,7 +84,6 @@ export default function Home() {
           </div>
         </form>
 
-        {/* trending chips */}
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-[13px]">
           <span className="mr-1 text-zinc-500">Trending Position</span>
           {trendingPositions.map((position, index) => (
@@ -89,8 +92,8 @@ export default function Home() {
               href="#"
               className={
                 index === 0
-                  ? "rounded-full bg-zinc-100 px-3 py-1 font-medium text-zinc-950 transition-colors hover:bg-white"
-                  : "rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-zinc-300 transition-colors hover:bg-white/10 hover:text-white"
+                  ? 'rounded-full bg-zinc-100 px-3 py-1 font-medium text-zinc-950 transition-colors hover:bg-white'
+                  : 'rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-zinc-300 transition-colors hover:bg-white/10 hover:text-white'
               }
             >
               {position}
@@ -111,13 +114,13 @@ export default function Home() {
             sizes="100vw"
             className="object-cover object-[50%_61%]"
           />
-          <p className="absolute inset-x-0 top-[40%] px-6 text-center text-lg leading-snug text-zinc-300 [text-shadow:0_0_16px_rgba(0,0,0,0.8)] sm:text-2xl md:text-[26px]">
-            Assisting over{" "}
+          <p className="absolute inset-x-0 top-[44%] px-6 text-center text-[22px] leading-snug text-zinc-300 [text-shadow:0_0_16px_rgba(0,0,0,0.8)] sm:text-2xl md:text-[28px]">
+            Assisting over{' '}
             <strong className="font-semibold text-white [text-shadow:0_0_14px_rgba(163,163,255,0.35)]">
               15,000 job seekers
             </strong>
             <br />
-            <span className="text-zinc-500">find their dream positions.</span>
+            <span className="text-zinc-400">find their dream positions.</span>
           </p>
         </div>
       </section>
