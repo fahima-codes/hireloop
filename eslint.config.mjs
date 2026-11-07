@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Abandoned nested scaffold (has its own dev .next build artifacts)
+    "hireloop/**",
   ]),
 ]);
 
