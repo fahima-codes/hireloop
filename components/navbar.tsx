@@ -13,10 +13,16 @@ import { authClient } from '@/lib/auth-client';
 // better-auth থেকে inferred session type — 'any' ব্যবহারের দরকার নেই
 type Session = typeof authClient.$Infer.Session;
 
-const navLinks = [
-  { label: 'Browse Jobs', href: '#', active: true },
-  { label: 'Company', href: '#', active: false },
-  { label: 'Pricing', href: '#', active: false },
+// রোল অনুযায়ী dashboard href দরকার — তাই navLinks-কে function করা হলো (module-scope-এ session পাওয়া যায় না)
+const navLinks = (role?: string) => [
+  { label: 'Browse Jobs', href: '/jobs', active: true },
+  { label: 'Company', href: '/company', active: false },
+  { label: 'Pricing', href: '/pricing', active: false },
+  {
+    label: 'Dashboard',
+    href: `/dashboard/${role || 'seeker'}`,
+    active: false,
+  },
 ];
 
 function Logo() {
@@ -47,7 +53,7 @@ function DesktopLinks({
 }) {
   return (
     <nav aria-label="Main" className="flex items-center gap-0.5">
-      {navLinks.map(link => (
+      {navLinks(session?.user.role).map(link => (
         <Link
           key={link.label}
           href={link.href}
@@ -108,7 +114,7 @@ function MobileLinks({
       aria-label="Mobile"
       className="mx-4 mt-2 flex flex-col items-stretch gap-0.5 rounded-xl border border-white/10 bg-zinc-950 p-2 md:hidden"
     >
-      {navLinks.map(link => (
+      {navLinks(session?.user.role).map(link => (
         <Link
           key={link.label}
           href={link.href}
