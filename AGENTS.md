@@ -17,8 +17,9 @@ Next 16.4.5 + React 19.3. Before writing any Next.js code, read the relevant gui
 
 ## Layout
 
-- App Router, App-Root dirs (`app/`, `components/`, `lib/`) live at the repo root — there is no `src/`. Path alias `@/*` maps to the repo root.
+- App Router, App-Root dirs (`app/`, `components/`, `hooks/`, `lib/`) live at the repo root — there is no `src/`. Path alias `@/*` maps to the repo root.
 - Tailwind v4, CSS-first: all theme config lives in `app/globals.css`; there is no `tailwind.config` file. CSS goes through the `@tailwindcss/turbopack` rule in `next.config.ts`.
+- Two component locations: generic shadcn `/hooks`-backed components in `components/ui/`, but app-specific components live in `app/components/` (e.g. `DashboardSidebar`) — don't assume everything is under root `components/`.
 
 ## UI: shadcn on Base UI, not Radix
 
@@ -26,11 +27,18 @@ Next 16.4.5 + React 19.3. Before writing any Next.js code, read the relevant gui
 - Add further components with `npx shadcn@latest add <component>`; don't hand-write new ones under `components/ui/`.
 - Note: generated components import `cn` from the `cn` npm package, not `@/lib/utils`, despite what `components.json` aliases suggest.
 
-## Auth: better-auth backed by local MongoDB
+## Auth: better-auth + MongoDB (role-based)
 
-- Wiring: server config in `lib/auth.ts` (email+password + Google social), client hooks in `lib/auth-client.ts` (`signIn`, `signUp`, `useSession`), catch-all route handler at `app/api/auth/[...all]/route.ts`. Sign-in/sign-up pages live in the `app/(auth)/` route group but are currently empty placeholders.
-- `lib/auth.ts` hardcodes the Mongo connection (`mongodb://localhost:27017`, db `hireloopdb`) — it is NOT read from env. A local MongoDB must be running for any auth route to work.
-- `.env` is gitignored, not tracked. It currently holds `BETTER_AUTH_SECRET`/`BETTER_AUTH_URL`; `lib/auth.ts` also expects `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, which are not set.
+- Wiring: server config in `lib/auth.ts`, client hooks in `lib/auth-client.ts` (`authClient`, plus destructured `signIn`/`signUp`/`signOut`/`useSession`), catch-all route handler at `app/api/auth/[...all]/route.ts`.
+- User roles are a better-auth `user.additionalFields` entry: `'seeker' | 'recruiter' | 'admin'` (`input: true`, defaultValue `'seeker'`). Sign-up sends `role` from the client, and `auth-client.ts` uses the `inferAdditionalFields` plugin so types flow through `useSession`. Do not add a second role mechanism.
+- UI: `app/(auth)/auth-form.tsx` is the shared client form for both `sign-in` and `sign-up` pages; pages only wire the auth API calls (submit handlers live in the page files).
+- Mongo: `lib/auth.ts` reads `process.env.BETTER_AUTH_DB_URL` (Atlas connection string in gitignored `.env`; db name `hireloopdb` is hardcoded) and a `MongoClient` is created at module load with no fallback — auth routes break if that env var is missing. There is no other DB client in the codebase.
+- `.env` (gitignored, untracked) holds `BETTER_AUTH_SECRET`/`BETTER_AUTH_URL`/`BETTER_AUTH_DB_URL`. `lib/auth.ts` also expects `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, which are NOT set — and the Google/GitHub buttons in `auth-form.tsx` are currently decorative (no handlers).
+
+## App structure (current state of a WIP product)
+
+- HireLoop is a job board: landing page in `app/page.tsx`, auth in the `app/(auth)/` route group, role-scoped dashboards at `app/dashboard/{seeker,recruiter,admin}` sharing `app/dashboard/layout.tsx` (`SidebarProvider` + `AppSidebar`). Dashboard pages are still mostly empty scaffolds; the sidebar (`app/components/DashboardSidebar.tsx`) has static placeholder groups, not role-filtered menus yet.
+- Many code comments are written in Bengali — leave existing ones intact rather than rephrasing.
 
 ## Gotchas
 
