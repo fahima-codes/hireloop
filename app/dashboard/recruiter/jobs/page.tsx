@@ -1,9 +1,19 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Clock, Eye, Pencil, Plus, TrendingUp, Users } from 'lucide-react';
+import {
+  Clock,
+  Eye,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+  TrendingUp,
+  Users,
+} from 'lucide-react';
 
+import { DeleteJobDialog } from '@/app/components/DeleteJobDialog';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -12,7 +22,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-
+import {
+  deleteJob,
+  getJobs,
+  type JobApiDoc,
+} from '@/lib/api/jobs';
 import type { JobFormData } from '@/lib/actions/jobs';
 
 // Figma "Manage Jobs" স্ক্রিন অনুযায়ী কালার টোকেন
@@ -22,16 +36,35 @@ const textFaint = 'text-[#6e6e78]';
 
 type JobStatus = 'Active' | 'Closed';
 
-// new jobs form (JobFormData) থেকে যা সেভ হয় তার সাথে মিলিয়ে
-// manage টেবিলের জন্য প্রয়োজনীয় মেটাডাটা যোগ করা হলো
-export type ManagedJob = JobFormData & {
-  id: string;
+// API document + টেবিলে দরকারি ডেরাইভ করা মেটাডাটা
+type ManagedJob = JobFormData & {
+  _id: string;
   ref: string;
   status: JobStatus;
   postedAt: string;
   applicants: number;
   views: number;
 };
+
+// API document → টেবিলের row — মিসিং ফিল্ডগুলো ডিফল্ট দিয়ে পূরণ
+// নতুন তৈরি job-এ status/postedAt/applicants থাকে না
+function toManagedJob(doc: JobApiDoc): ManagedJob {
+  // ObjectId-র প্রথম ৪ বাইট = তৈরির টাইমস্ট্যাম্প — ওটা থেকেই posted date
+  const createdAtMs = parseInt(String(doc._id).slice(0, 8), 16) * 1000;
+  return {
+    ...doc,
+    _id: String(doc._id),
+    ref: doc.ref ?? `HL-${String(doc._id).slice(-5).toUpperCase()}`,
+    status: doc.status === 'Closed' ? 'Closed' : 'Active',
+    postedAt:
+      doc.postedAt ??
+      (Number.isFinite(createdAtMs)
+        ? new Date(createdAtMs).toISOString().slice(0, 10)
+        : ''),
+    applicants: doc.applicants ?? 0,
+    views: doc.views ?? 0,
+  };
+}
 
 const jobCategories = [
   'Engineering',
@@ -76,37 +109,90 @@ function StatusPill({ status }: { status: JobStatus }) {
 }
 
 export default function ManageJobsPage() {
+  const [jobs, setJobs] = useState<ManagedJob[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  // ডিলিট কনফার্ম ডায়লগের টার্গেট — null মানে ডায়লগ বন্ধ
+  const [deleteTarget, setDeleteTarget] = useState<ManagedJob | null>(null);
+
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [statusTab, setStatusTab] = useState<JobStatus | 'All'>('All');
 
-  const jobs = useMemo(
+  // সব setState .then/.catch/.finally কলব্যাকে — effect বডিতে sync setState নেই
+  const loadJobs = useCallback(() => {
+    return getJobs()
+      .then(docs => {
+        setJobs(docs.map(toManagedJob));
+        setError(null);
+      })
+      .catch((e: unknown) => {
+        setError(
+          e instanceof Error
+            ? e.message
+            : 'Something went wrong loading jobs',
+        );
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    loadJobs();
+  }, [loadJobs]);
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    setError(null);
+    try {
+      await deleteJob(id);
+      // সফল হলে লোকালি সরিয়ে দিই — আবার refetch লাগে না
+      setJobs(prev => prev.filter(job => job._id !== id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to delete job');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  // ডায়লগের Delete চাপলে — ডায়লগ বন্ধ করে আসল ডিলিট চালাই
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget._id;
+    setDeleteTarget(null);
+    void handleDelete(id);
+  };
+
+  const filteredJobs = useMemo(
     () =>
-      dummyJobs.filter(
+      jobs.filter(
         job =>
           (statusTab === 'All' || job.status === statusTab) &&
           (!statusFilter || job.status === statusFilter) &&
           (!categoryFilter || job.category === categoryFilter),
       ),
-    [statusTab, statusFilter, categoryFilter],
+    [jobs, statusTab, statusFilter, categoryFilter],
   );
 
-  // Bento insights — ডামি ডাটা থেকেই হিসাব
-  const totalApplicants = dummyJobs.reduce((s, j) => s + j.applicants, 0);
-  const totalViews = dummyJobs.reduce((s, j) => s + j.views, 0);
+  const activeCount = jobs.filter(j => j.status === 'Active').length;
+  const closedCount = jobs.length - activeCount;
+
+  // Bento insights — আসল ডাটা থেকেই হিসাব
+  const totalApplicants = jobs.reduce((s, j) => s + j.applicants, 0);
+  const totalViews = jobs.reduce((s, j) => s + j.views, 0);
   const engagementRate =
     totalViews > 0
       ? `${((totalApplicants / totalViews) * 100).toFixed(1)}%`
-      : '0%';
+      : '—';
 
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-8">
       {/* হেডার — টাইটেল + ডানপাশে Create Job (Figma: সাদা বাটন) */}
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1
-            className={`text-2xl font-semibold tracking-tight ${textPrimary}`}
-          >
+          <h1 className={`text-2xl font-semibold tracking-tight ${textPrimary}`}>
             Manage Jobs
           </h1>
           <p className={`mt-1 text-sm ${textMuted}`}>
@@ -154,13 +240,13 @@ export default function ManageJobsPage() {
           </div>
         </div>
 
-        {/* সেগমেন্টেড ট্যাব — Active (n) / Closed (n) */}
+        {/* সেগমেন্টেড ট্যাব — All / Active (n) / Closed (n) */}
         <div className="flex h-[42px] w-fit items-center gap-1 rounded-xl border border-white/10 bg-[#1a1a1f] p-1">
           {(['All', 'Active', 'Closed'] as const).map(tab => {
             const isActive = statusTab === tab;
             const count =
               tab === 'All'
-                ? dummyJobs.length
+                ? jobs.length
                 : tab === 'Active'
                   ? activeCount
                   : closedCount;
@@ -183,14 +269,39 @@ export default function ManageJobsPage() {
         </div>
       </section>
 
+      {/* লোড/এরর বার্তা */}
+      {(isLoading || error) && (
+        <p
+          className={`mt-5 flex items-center gap-2 text-sm ${
+            error ? 'text-[#f59e0b]' : textMuted
+          }`}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              Loading job posts…
+            </>
+          ) : (
+            <>
+              {error}
+              <button
+                type="button"
+                onClick={loadJobs}
+                className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-[#ededef] hover:bg-white/10"
+              >
+                Retry
+              </button>
+            </>
+          )}
+        </p>
+      )}
+
       {/* ডাটা টেবিল — মোবাইলে হরিজন্টাল স্ক্রল */}
       <section className="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-[#141418]">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] text-left">
             <thead>
-              <tr
-                className={`border-b border-white/10 bg-[#1a1a1f] text-xs ${textFaint}`}
-              >
+              <tr className={`border-b border-white/10 bg-[#1a1a1f] text-xs ${textFaint}`}>
                 <th className="px-4 py-3 font-medium">Title</th>
                 <th className="px-4 py-3 font-medium">Company</th>
                 <th className="px-4 py-3 font-medium">Category</th>
@@ -201,20 +312,32 @@ export default function ManageJobsPage() {
               </tr>
             </thead>
             <tbody className="text-sm">
-              {jobs.length === 0 ? (
+              {isLoading ? (
+                // লোডিং স্কেলিটন — ৫টা সারি
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-b border-white/10 last:border-0">
+                    {Array.from({ length: 7 }).map((__, c) => (
+                      <td key={c} className="px-4 py-3">
+                        <div className="h-4 animate-pulse rounded bg-white/[0.06]" />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : filteredJobs.length === 0 ? (
                 <tr>
                   <td
                     colSpan={7}
                     className={`px-4 py-16 text-center text-sm ${textMuted}`}
                   >
-                    No job posts found. Try adjusting the filters or create a
-                    new listing.
+                    {jobs.length === 0
+                      ? 'No job posts yet. Create your first listing to see it here.'
+                      : 'No job posts match the current filters.'}
                   </td>
                 </tr>
               ) : (
-                jobs.map(job => (
+                filteredJobs.map(job => (
                   <tr
-                    key={job.id}
+                    key={job._id}
                     className={`border-b border-white/10 last:border-0 transition-colors hover:bg-white/[0.03] ${
                       job.status === 'Closed' ? 'opacity-60' : ''
                     }`}
@@ -247,7 +370,9 @@ export default function ManageJobsPage() {
                     </td>
                     <td className={`px-4 py-3 ${textMuted}`}>{job.jobType}</td>
                     <td className={`px-4 py-3 ${textMuted}`}>
-                      {dateFmt.format(new Date(job.postedAt))}
+                      {job.postedAt
+                        ? dateFmt.format(new Date(job.postedAt))
+                        : '—'}
                     </td>
                     <td className="px-4 py-3">
                       <StatusPill status={job.status} />
@@ -269,6 +394,24 @@ export default function ManageJobsPage() {
                           className="flex size-8 items-center justify-center rounded-lg text-[#c4c7c8] hover:bg-white/10 hover:text-white"
                         >
                           <Pencil className="size-4" />
+                        </button>
+                        {/* শেষ অ্যাকশন — Delete (কনফার্ম ডায়লগ খোলে) */}
+                        <button
+                          type="button"
+                          aria-label={`Delete ${job.title}`}
+                          title={
+                            job.status === 'Active'
+                              ? 'Delete job post'
+                              : 'Delete closed job post'
+                          }
+                          onClick={() => setDeleteTarget(job)}
+                          className="flex size-8 items-center justify-center rounded-lg text-[#c4c7c8] hover:bg-red-500/10 hover:text-red-400"
+                        >
+                          {deletingId === job._id ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="size-4" />
+                          )}
                         </button>
                       </div>
                     </td>
@@ -310,11 +453,19 @@ export default function ManageJobsPage() {
           <p className={`mt-4 text-2xl font-semibold ${textPrimary}`}>
             {totalApplicants.toLocaleString('en-US')}
           </p>
-          <p className="mt-4 text-xs text-[#f59e0b]">
-            -2.1% across tech sectors
-          </p>
+          <p className="mt-4 text-xs text-[#f59e0b]">-2.1% across tech sectors</p>
         </div>
       </section>
+
+      {/* Delete কনফার্ম ডায়লগ — shadcn AlertDialog (app/components/DeleteJobDialog) */}
+      <DeleteJobDialog
+        open={deleteTarget !== null}
+        onOpenChange={open => {
+          if (!open) setDeleteTarget(null);
+        }}
+        jobTitle={deleteTarget?.title}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }

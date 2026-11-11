@@ -1,6 +1,45 @@
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
-export const getJobs = async () => {
+
+// MongoDB-র raw document — JobFormData + API-র _id ও ঐচ্ছিক মেটাডাটা
+export type JobApiDoc = {
+  _id: string;
+  title: string;
+  company: string;
+  category: string;
+  jobType: string;
+  remoteAllowed: boolean;
+  location: string;
+  deadline: string;
+  salaryMin: string;
+  salaryMax: string;
+  frequency: string;
+  responsibilities: string;
+  requirements: string;
+  ref?: string;
+  status?: string;
+  postedAt?: string;
+  applicants?: number;
+  views?: number;
+};
+
+export const getJobs = async (): Promise<JobApiDoc[]> => {
   const res = await fetch(`${BASE_URL}/jobs`);
-  return res.json();
+  if (!res.ok) {
+    throw new Error(`Failed to load jobs (${res.status})`);
+  }
+  const data = await res.json();
+  // API বা তো সরাসরি array দেয়, নয়তো { jobs: [...] } ভেতরে
+  return Array.isArray(data) ? data : (data.jobs ?? []);
+};
+
+export const deleteJob = async (id: string) => {
+  const res = await fetch(`${BASE_URL}/jobs/${id}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to delete job (${res.status})`);
+  }
+  // কিছু ব্যাকএন্ড খালি body পাঠায় — সেক্ষেত্রে json() চেস্টা করে null
+  return res.json().catch(() => null);
 };
