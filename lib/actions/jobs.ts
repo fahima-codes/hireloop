@@ -5,7 +5,13 @@ export type JobFormData = {
   category: string;
   jobType: string;
   remoteAllowed: boolean;
-  // tomar form e ja ja ase, eikhane add koro
+  location: string;
+  deadline: string;
+  salaryMin: string;
+  salaryMax: string;
+  frequency: string;
+  responsibilities: string;
+  requirements: string;
 };
 
 const BASE_URL =
