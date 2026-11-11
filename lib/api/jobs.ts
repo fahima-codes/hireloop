@@ -34,12 +34,21 @@ export const getJobs = async (): Promise<JobApiDoc[]> => {
 };
 
 export const deleteJob = async (id: string) => {
-  const res = await fetch(`${BASE_URL}/jobs/${id}`, {
+  const url = `${BASE_URL}/jobs/${id}`;
+  // ডিবাগ — ব্রাউজার কনসোলে দেখা যাবে
+  console.log('[DeleteJob] request →', 'DELETE', url);
+  const res = await fetch(url, {
     method: 'DELETE',
   });
+  console.log('[DeleteJob] response status →', res.status, res.statusText);
   if (!res.ok) {
+    // ব্যাকএন্ডের error body-ও লগ করি (যেমন: {"message":"Job not found"})
+    const body = await res.text().catch(() => '');
+    console.error('[DeleteJob] failed →', res.status, body);
     throw new Error(`Failed to delete job (${res.status})`);
   }
   // কিছু ব্যাকএন্ড খালি body পাঠায় — সেক্ষেত্রে json() চেস্টা করে null
-  return res.json().catch(() => null);
+  const data = await res.json().catch(() => null);
+  console.log('[DeleteJob] response body →', data);
+  return data;
 };

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 
 import { DeleteJobDialog } from '@/app/components/DeleteJobDialog';
+import { DeleteSuccessDialog } from '@/app/components/DeleteSuccessDialog';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -22,11 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  deleteJob,
-  getJobs,
-  type JobApiDoc,
-} from '@/lib/api/jobs';
+import { deleteJob, getJobs, type JobApiDoc } from '@/lib/api/jobs';
 import type { JobFormData } from '@/lib/actions/jobs';
 
 // Figma "Manage Jobs" স্ক্রিন অনুযায়ী কালার টোকেন
@@ -115,6 +112,8 @@ export default function ManageJobsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   // ডিলিট কনফার্ম ডায়লগের টার্গেট — null মানে ডায়লগ বন্ধ
   const [deleteTarget, setDeleteTarget] = useState<ManagedJob | null>(null);
+  // ডিলিট সাকসেস ডায়লগ — true মানে দেখাবে
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
@@ -129,9 +128,7 @@ export default function ManageJobsPage() {
       })
       .catch((e: unknown) => {
         setError(
-          e instanceof Error
-            ? e.message
-            : 'Something went wrong loading jobs',
+          e instanceof Error ? e.message : 'Something went wrong loading jobs',
         );
       })
       .finally(() => {
@@ -144,13 +141,18 @@ export default function ManageJobsPage() {
   }, [loadJobs]);
 
   const handleDelete = async (id: string) => {
+    console.log('[DeleteJob] confirm →', 'deleting job id:', id);
     setDeletingId(id);
     setError(null);
     try {
       await deleteJob(id);
       // সফল হলে লোকালি সরিয়ে দিই — আবার refetch লাগে না
       setJobs(prev => prev.filter(job => job._id !== id));
+      console.log('[DeleteJob] ✅ success — removed from list:', id);
+      setShowSuccess(true);
     } catch (e) {
+      // এখানে network failure / CORS / 404-500 response সব ধরা পড়বে
+      console.error('[DeleteJob] ❌ error —', e);
       setError(e instanceof Error ? e.message : 'Failed to delete job');
     } finally {
       setDeletingId(null);
@@ -163,6 +165,12 @@ export default function ManageJobsPage() {
     const id = deleteTarget._id;
     setDeleteTarget(null);
     void handleDelete(id);
+  };
+
+  // Success dialog er Done chaple — refresh hobe
+  const handleSuccessClose = () => {
+    setShowSuccess(false);
+    void loadJobs();
   };
 
   const filteredJobs = useMemo(
@@ -192,7 +200,9 @@ export default function ManageJobsPage() {
       {/* হেডার — টাইটেল + ডানপাশে Create Job (Figma: সাদা বাটন) */}
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className={`text-2xl font-semibold tracking-tight ${textPrimary}`}>
+          <h1
+            className={`text-2xl font-semibold tracking-tight ${textPrimary}`}
+          >
             Manage Jobs
           </h1>
           <p className={`mt-1 text-sm ${textMuted}`}>
@@ -301,7 +311,9 @@ export default function ManageJobsPage() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] text-left">
             <thead>
-              <tr className={`border-b border-white/10 bg-[#1a1a1f] text-xs ${textFaint}`}>
+              <tr
+                className={`border-b border-white/10 bg-[#1a1a1f] text-xs ${textFaint}`}
+              >
                 <th className="px-4 py-3 font-medium">Title</th>
                 <th className="px-4 py-3 font-medium">Company</th>
                 <th className="px-4 py-3 font-medium">Category</th>
@@ -315,7 +327,10 @@ export default function ManageJobsPage() {
               {isLoading ? (
                 // লোডিং স্কেলিটন — ৫টা সারি
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-b border-white/10 last:border-0">
+                  <tr
+                    key={i}
+                    className="border-b border-white/10 last:border-0"
+                  >
                     {Array.from({ length: 7 }).map((__, c) => (
                       <td key={c} className="px-4 py-3">
                         <div className="h-4 animate-pulse rounded bg-white/[0.06]" />
@@ -453,7 +468,9 @@ export default function ManageJobsPage() {
           <p className={`mt-4 text-2xl font-semibold ${textPrimary}`}>
             {totalApplicants.toLocaleString('en-US')}
           </p>
-          <p className="mt-4 text-xs text-[#f59e0b]">-2.1% across tech sectors</p>
+          <p className="mt-4 text-xs text-[#f59e0b]">
+            -2.1% across tech sectors
+          </p>
         </div>
       </section>
 
@@ -465,6 +482,13 @@ export default function ManageJobsPage() {
         }}
         jobTitle={deleteTarget?.title}
         onConfirm={confirmDelete}
+      />
+
+      {/* Delete Success ডায়লগ — Done chaple refresh hobe */}
+      <DeleteSuccessDialog
+        open={showSuccess}
+        onOpenChange={setShowSuccess}
+        onClose={handleSuccessClose}
       />
     </div>
   );
