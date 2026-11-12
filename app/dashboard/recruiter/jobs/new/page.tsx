@@ -17,28 +17,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { createJob } from '@/lib/actions/jobs';
-
-// auth-form.tsx-এর হুবহু collect প্যাটার্ন — flat state অবজেক্ট, name দিয়ে generic update
-export type JobFormData = {
-  title: string;
-  company: string;
-  category: string;
-  jobType: string;
-  remoteAllowed: boolean;
-  location: string;
-  deadline: string;
-  salaryMin: string;
-  salaryMax: string;
-  frequency: string;
-  responsibilities: string;
-  requirements: string;
-};
+import {
+  jobCategories,
+  jobTypes,
+  salaryFrequencies,
+} from '@/lib/constants/jobs';
+import type { JobFormData } from '@/lib/types/jobs';
 
 const inputClass =
   'h-10 w-full rounded-xl border-white/10 bg-white/[0.04] text-sm text-zinc-100 placeholder:text-zinc-500 focus-visible:border-white/20';
 const labelClass = 'mb-1.5 block text-sm font-medium text-zinc-300';
 const cardClass = 'rounded-2xl border border-white/10 bg-white/[0.03] p-6';
 
+// auth-form.tsx-এর হুবহু collect প্যাটার্ন — flat state অবজেক্ট, name দিয়ে generic update
 const emptyJob: JobFormData = {
   title: '',
   company: '',
@@ -54,25 +45,6 @@ const emptyJob: JobFormData = {
   responsibilities: '',
   requirements: '',
 };
-
-const jobTypes = ['Full-Time', 'Part-Time', 'Contract', 'Internship'];
-const jobCategories = [
-  'Engineering',
-  'Design',
-  'Product',
-  'Marketing',
-  'Data & Analytics',
-  'Human Resources',
-  'Customer Support',
-  'Other',
-];
-const salaryFrequencies = [
-  'per hour',
-  'per day',
-  'per week',
-  'per month',
-  'per year',
-];
 
 // numbered সেকশন হেডার — স্ক্রিনশটের ভায়োলেট ব্যাজ + টাইটেল প্যাটার্ন
 function SectionHeader({ step, title }: { step: number; title: string }) {

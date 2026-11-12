@@ -15,33 +15,18 @@ import {
 
 import { DeleteJobDialog } from '@/app/components/DeleteJobDialog';
 import { DeleteSuccessDialog } from '@/app/components/DeleteSuccessDialog';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { deleteJob, getJobs, type JobApiDoc } from '@/lib/api/jobs';
-import type { JobFormData } from '@/lib/actions/jobs';
+import { FilterSelect } from '@/app/components/FilterSelect';
+import { IconButton } from '@/app/components/IconButton';
+import { InsightCard } from '@/app/components/InsightCard';
+import { StatusPill } from '@/app/components/StatusPill';
+import { jobCategories, jobStatuses } from '@/lib/constants/jobs';
+import { textFaint, textMuted, textPrimary } from '@/lib/constants/ui';
+import { deleteJob, getJobs } from '@/lib/api/jobs';
+import type { JobApiDoc, JobStatus, ManagedJob } from '@/lib/types/jobs';
 
-// Figma "Manage Jobs" স্ক্রিন অনুযায়ী কালার টোকেন
-const textPrimary = 'text-[#ededef]';
-const textMuted = 'text-[#a0a0ab]';
-const textFaint = 'text-[#6e6e78]';
-
-type JobStatus = 'Active' | 'Closed';
-
-// API document + টেবিলে দরকারি ডেরাইভ করা মেটাডাটা
-type ManagedJob = JobFormData & {
-  _id: string;
-  ref: string;
-  status: JobStatus;
-  postedAt: string;
-  applicants: number;
-  views: number;
-};
+const inputClass =
+  'h-[38px] w-full rounded-xl border-white/10 bg-[#0c0c0f] text-sm text-[#ededef] focus-visible:border-white/20';
+const labelClass = 'mb-2 block text-xs text-[#a0a0ab]';
 
 // API document → টেবিলের row — মিসিং ফিল্ডগুলো ডিফল্ট দিয়ে পূরণ
 // নতুন তৈরি job-এ status/postedAt/applicants থাকে না
@@ -63,47 +48,11 @@ function toManagedJob(doc: JobApiDoc): ManagedJob {
   };
 }
 
-const jobCategories = [
-  'Engineering',
-  'Design',
-  'Product',
-  'Marketing',
-  'Data & Analytics',
-  'Human Resources',
-  'Customer Support',
-  'Other',
-];
-
-const inputClass =
-  'h-[38px] w-full rounded-xl border-white/10 bg-[#0c0c0f] text-sm text-[#ededef] focus-visible:border-white/20';
-const labelClass = 'mb-2 block text-xs text-[#a0a0ab]';
-
 const dateFmt = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',
   year: 'numeric',
 });
-
-// স্ট্যাটাস পিল — Active সবুজ (#22c55e), Closed ধূসর
-function StatusPill({ status }: { status: JobStatus }) {
-  const active = status === 'Active';
-  return (
-    <span
-      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${
-        active
-          ? 'bg-[#22c55e]/15 text-[#22c55e]'
-          : 'bg-[#a1a4aa]/15 text-[#a0a0ab]'
-      }`}
-    >
-      <span
-        className={`size-1.5 rounded-full ${
-          active ? 'bg-[#22c55e]' : 'bg-[#a1a4aa]'
-        }`}
-      />
-      {status}
-    </span>
-  );
-}
 
 export default function ManageJobsPage() {
   const [jobs, setJobs] = useState<ManagedJob[]>([]);
@@ -222,31 +171,26 @@ export default function ManageJobsPage() {
       <section className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="grid w-full gap-4 sm:grid-cols-2 lg:w-auto">
           <div className="w-full lg:w-[262px]">
-            <Label className={labelClass}>Status</Label>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className={inputClass}>
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Closed">Closed</SelectItem>
-              </SelectContent>
-            </Select>
+            <FilterSelect
+              label="Status"
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+              placeholder="All Statuses"
+              options={jobStatuses}
+              triggerClassName={inputClass}
+              labelClassName={labelClass}
+            />
           </div>
           <div className="w-full lg:w-[262px]">
-            <Label className={labelClass}>Category</Label>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className={inputClass}>
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                {jobCategories.map(category => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FilterSelect
+              label="Category"
+              value={categoryFilter}
+              onValueChange={setCategoryFilter}
+              placeholder="All Categories"
+              options={jobCategories}
+              triggerClassName={inputClass}
+              labelClassName={labelClass}
+            />
           </div>
         </div>
 
@@ -394,40 +338,34 @@ export default function ManageJobsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
-                        <button
-                          type="button"
-                          aria-label={`View ${job.title}`}
+                        <IconButton
+                          label={`View ${job.title}`}
                           title="View job post"
-                          className="flex size-8 items-center justify-center rounded-lg text-[#c4c7c8] hover:bg-white/10 hover:text-white"
-                        >
-                          <Eye className="size-4" />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`Edit ${job.title}`}
+                          icon={<Eye className="size-4" />}
+                        />
+                        <IconButton
+                          label={`Edit ${job.title}`}
                           title="Edit job post"
-                          className="flex size-8 items-center justify-center rounded-lg text-[#c4c7c8] hover:bg-white/10 hover:text-white"
-                        >
-                          <Pencil className="size-4" />
-                        </button>
+                          icon={<Pencil className="size-4" />}
+                        />
                         {/* শেষ অ্যাকশন — Delete (কনফার্ম ডায়লগ খোলে) */}
-                        <button
-                          type="button"
-                          aria-label={`Delete ${job.title}`}
+                        <IconButton
+                          label={`Delete ${job.title}`}
                           title={
                             job.status === 'Active'
                               ? 'Delete job post'
                               : 'Delete closed job post'
                           }
+                          variant="danger"
+                          icon={
+                            deletingId === job._id ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="size-4" />
+                            )
+                          }
                           onClick={() => setDeleteTarget(job)}
-                          className="flex size-8 items-center justify-center rounded-lg text-[#c4c7c8] hover:bg-red-500/10 hover:text-red-400"
-                        >
-                          {deletingId === job._id ? (
-                            <Loader2 className="size-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="size-4" />
-                          )}
-                        </button>
+                        />
                       </div>
                     </td>
                   </tr>
@@ -440,38 +378,26 @@ export default function ManageJobsPage() {
 
       {/* Bento স্টাইল ইনসাইট গ্রিড */}
       <section className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-2xl border border-white/10 bg-[#141418] p-6">
-          <div className={`flex items-center gap-2 text-sm ${textMuted}`}>
-            <TrendingUp className="size-4" />
-            Engagement Rate
-          </div>
-          <p className={`mt-4 text-2xl font-semibold ${textPrimary}`}>
-            {engagementRate}
-          </p>
-          <p className="mt-4 text-xs text-[#22c55e]">+5.2% from last month</p>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-[#141418] p-6">
-          <div className={`flex items-center gap-2 text-sm ${textMuted}`}>
-            <Clock className="size-4" />
-            Avg. Time to Fill
-          </div>
-          <p className={`mt-4 text-2xl font-semibold ${textPrimary}`}>
-            14 Days
-          </p>
-          <p className={`mt-4 text-xs ${textMuted}`}>Stable performance</p>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-[#141418] p-6">
-          <div className={`flex items-center gap-2 text-sm ${textMuted}`}>
-            <Users className="size-4" />
-            Total Applications
-          </div>
-          <p className={`mt-4 text-2xl font-semibold ${textPrimary}`}>
-            {totalApplicants.toLocaleString('en-US')}
-          </p>
-          <p className="mt-4 text-xs text-[#f59e0b]">
-            -2.1% across tech sectors
-          </p>
-        </div>
+        <InsightCard
+          icon={<TrendingUp className="size-4" />}
+          label="Engagement Rate"
+          value={engagementRate}
+          note="+5.2% from last month"
+          noteTone="positive"
+        />
+        <InsightCard
+          icon={<Clock className="size-4" />}
+          label="Avg. Time to Fill"
+          value="14 Days"
+          note="Stable performance"
+        />
+        <InsightCard
+          icon={<Users className="size-4" />}
+          label="Total Applications"
+          value={totalApplicants.toLocaleString('en-US')}
+          note="-2.1% across tech sectors"
+          noteTone="warning"
+        />
       </section>
 
       {/* Delete কনফার্ম ডায়লগ — shadcn AlertDialog (app/components/DeleteJobDialog) */}

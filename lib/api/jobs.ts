@@ -1,27 +1,11 @@
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
 
-// MongoDB-র raw document — JobFormData + API-র _id ও ঐচ্ছিক মেটাডাটা
-export type JobApiDoc = {
-  _id: string;
-  title: string;
-  company: string;
-  category: string;
-  jobType: string;
-  remoteAllowed: boolean;
-  location: string;
-  deadline: string;
-  salaryMin: string;
-  salaryMax: string;
-  frequency: string;
-  responsibilities: string;
-  requirements: string;
-  ref?: string;
-  status?: string;
-  postedAt?: string;
-  applicants?: number;
-  views?: number;
-};
+import type { JobApiDoc } from '@/lib/types/jobs';
+
+// টাইপ এখন শেয়ারড জায়গায় — lib/types/jobs.ts থেকে রি-এক্সপোর্ট,
+// তাই পুরনো import path (`@/lib/api/jobs`) আগের মতোই কাজ করবে
+export type { JobApiDoc } from '@/lib/types/jobs';
 
 export const getJobs = async (): Promise<JobApiDoc[]> => {
   const res = await fetch(`${BASE_URL}/jobs`);

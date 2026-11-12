@@ -1,18 +1,7 @@
-// Type ta ekhanei rakho, page.tsx theke import kora lagbe na
-export type JobFormData = {
-  title: string;
-  company: string;
-  category: string;
-  jobType: string;
-  remoteAllowed: boolean;
-  location: string;
-  deadline: string;
-  salaryMin: string;
-  salaryMax: string;
-  frequency: string;
-  responsibilities: string;
-  requirements: string;
-};
+// টাইপ এখন শেয়ারড জায়গায় — lib/types/jobs.ts থেকে রি-এক্সপোর্ট,
+// তাই পুরনো import path (`@/lib/actions/jobs`) আগের মতোই কাজ করবে
+export type { JobFormData } from '@/lib/types/jobs';
+import type { JobFormData } from '@/lib/types/jobs';
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
