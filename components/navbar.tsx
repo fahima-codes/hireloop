@@ -9,7 +9,6 @@ import { cn } from 'cn';
 
 import { Button } from '@/components/ui/button';
 import { authClient } from '@/lib/auth-client';
-import BrowseJobs from '@/app/BrowseJobs/page';
 
 // better-auth থেকে inferred session type — 'any' ব্যবহারের দরকার নেই
 type Session = typeof authClient.$Infer.Session;
