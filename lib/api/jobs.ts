@@ -7,8 +7,8 @@ import type { JobApiDoc } from '@/lib/types/jobs';
 // তাই পুরনো import path (`@/lib/api/jobs`) আগের মতোই কাজ করবে
 export type { JobApiDoc } from '@/lib/types/jobs';
 
-export const getJobs = async (): Promise<JobApiDoc[]> => {
-  const res = await fetch(`${BASE_URL}/jobs`);
+export const getJobs = async (query = ''): Promise<JobApiDoc[]> => {
+  const res = await fetch(`${BASE_URL}/jobs?${query}`);
   if (!res.ok) {
     throw new Error(`Failed to load jobs (${res.status})`);
   }

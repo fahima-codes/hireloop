@@ -9,13 +9,14 @@ import { cn } from 'cn';
 
 import { Button } from '@/components/ui/button';
 import { authClient } from '@/lib/auth-client';
+import BrowseJobs from '@/app/BrowseJobs/page';
 
 // better-auth থেকে inferred session type — 'any' ব্যবহারের দরকার নেই
 type Session = typeof authClient.$Infer.Session;
 
 // রোল অনুযায়ী dashboard href দরকার — তাই navLinks-কে function করা হলো (module-scope-এ session পাওয়া যায় না)
 const navLinks = (role?: string) => [
-  { label: 'Browse Jobs', href: '/jobs', active: true },
+  { label: 'Browse Jobs', href: '/BrowseJobs', active: true },
   { label: 'Company', href: '/company', active: false },
   { label: 'Pricing', href: '/pricing', active: false },
   {
