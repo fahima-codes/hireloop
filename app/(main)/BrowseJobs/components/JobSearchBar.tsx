@@ -4,6 +4,7 @@
 
 import type { FormEvent } from 'react';
 import { Search } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 type JobSearchBarProps = {
   value: string;
@@ -11,8 +12,19 @@ type JobSearchBarProps = {
 };
 
 export function JobSearchBar({ value, onValueChange }: JobSearchBarProps) {
-  const handleSubmit = (event: FormEvent) => {
+  const router = useRouter();
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const data = Object.fromEntries(formData.entries());
+    console.log(data);
+    const search = data.searchField;
+
+    const params = new URLSearchParams();
+    params.set('search', search as string);
+    router.push(`/BrowseJobs?${params.toString()}`);
+
     // TODO: search query অনুযায়ী jobs fetch/filter করার লজিক এখানে বসবে — ইচ্ছাকৃতভাবে খালি
   };
 

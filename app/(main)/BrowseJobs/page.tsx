@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { BrowseJobsView } from '@/app/components/BrowseJobsView';
+import { BrowseJobsView } from '@/app/(main)/BrowseJobs/components/BrowseJobsView';
 import { getJobs } from '@/lib/api/jobs';
 
 // এই লাইনটি যোগ করলে এরর চলে যাবে

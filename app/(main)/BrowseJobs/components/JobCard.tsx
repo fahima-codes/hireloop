@@ -4,13 +4,15 @@
 
 import { Banknote, Bookmark, Briefcase } from 'lucide-react';
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 
 import { IconButton } from '@/app/components/IconButton';
 import { textMuted, textPrimary } from '@/lib/constants/ui';
 import type { JobApiDoc } from '@/lib/types/jobs';
 
 // "140000" → "$140k" — সংখ্যা না পড়লে স্ট্রিংটাই দেখায়, দুই পাশ থেকে range বানায়
-function formatSalary(min: string, max: string) {
+// job details পেজেও stat কার্ডে রি-ইউজ হয়
+export function formatSalary(min: string, max: string) {
   const format = (value: string) => {
     const amount = Number(value);
     if (!value) return null;
@@ -49,11 +51,19 @@ function JobBadge({
 }
 
 export function JobCard({ job }: { job: JobApiDoc }) {
-  // TODO: job save/bookmark করার লজিক এখানে বসবে — ইচ্ছাকৃতভাবে খালি
-  const handleSave = () => {};
+  // TODO: job save/bookmark করার লজিক এখানে বসবে — আপাতত card-link-এর navigation আটকে রাখা হয়
+  const handleSave = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
 
+  // পুরো কার্ডই details পেজের link — /BrowseJobs/[id]
   return (
-    <article className="rounded-2xl border border-white/10 bg-[#141418] p-5 transition-colors hover:border-white/20">
+    <Link
+      href={`/BrowseJobs/${job._id}`}
+      className="block rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+    >
+      <article className="rounded-2xl border border-white/10 bg-[#141418] p-5 transition-colors hover:border-white/20">
       <div className="flex items-start gap-4">
         {/* কোম্পানি লোগোর জায়গায় ইনিশিয়াল অ্যাভাটার */}
         <span
@@ -88,6 +98,7 @@ export function JobCard({ job }: { job: JobApiDoc }) {
         </JobBadge>
         {job.remoteAllowed && <JobBadge tone="positive">Remote</JobBadge>}
       </div>
-    </article>
+      </article>
+    </Link>
   );
 }

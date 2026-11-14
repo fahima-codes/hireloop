@@ -5,13 +5,13 @@
 
 import { useMemo, useState } from 'react';
 
-import { JobCard } from '@/app/components/JobCard';
-import { JobPagination } from '@/app/components/JobPagination';
-import { JobSearchBar } from '@/app/components/JobSearchBar';
+import { JobCard } from '@/app/(main)/BrowseJobs/components/JobCard';
+import { JobPagination } from '@/app/(main)/BrowseJobs/components/JobPagination';
+import { JobSearchBar } from '@/app/(main)/BrowseJobs/components/JobSearchBar';
 import {
   JobsFilterPanel,
   type FilterGroup,
-} from '@/app/components/JobsFilterPanel';
+} from '@/app/(main)/BrowseJobs/components/JobsFilterPanel';
 import {
   Select,
   SelectContent,
@@ -57,12 +57,18 @@ export function BrowseJobsView({ jobs }: { jobs: JobApiDoc[] }) {
 
   // ---------- হ্যান্ডলার ----------
   // TODO: ফিল্টার পরিবর্তনে job list আপডেটের লজিক এখানে বসবে — আপাতত শুধু সিলেকশন স্টেট টগল হয়
-  const handleJobTypeToggle = (value: string) =>
+  const handleJobTypeToggle = (value: string) => {
+    console.log('Job Type filter clicked:', value);
     setSelectedJobTypes(prev => toggleValue(prev, value));
-  const handleCategoryToggle = (value: string) =>
+  };
+  const handleCategoryToggle = (value: string) => {
+    console.log('Category filter clicked:', value);
     setSelectedCategories(prev => toggleValue(prev, value));
-  const handleWorkModeToggle = (value: string) =>
+  };
+  const handleWorkModeToggle = (value: string) => {
+    console.log('Work Mode filter clicked:', value);
     setSelectedWorkModes(prev => toggleValue(prev, value));
+  };
 
   const handleSortChange = (value: SortOption) => {
     setSortBy(value);

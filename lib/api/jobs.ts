@@ -17,6 +17,20 @@ export const getJobs = async (query = ''): Promise<JobApiDoc[]> => {
   return Array.isArray(data) ? data : (data.jobs ?? []);
 };
 
+export const getJob = async (id: string): Promise<JobApiDoc | null> => {
+  // ব্যাকএন্ডে আলাদা single-job endpoint নেই — query param দিয়ে filter করলে array আসে
+  const res = await fetch(
+    `${BASE_URL}/jobs?id=${encodeURIComponent(id)}`,
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to load job (${res.status})`);
+  }
+  const data = await res.json();
+  // API বা তো সরাসরি array দেয়, নয়তো { jobs: [...] } ভেতরে — প্রথমটাই আমাদের job
+  const jobs = Array.isArray(data) ? data : (data.jobs ?? []);
+  return jobs[0] ?? null;
+};
+
 export const deleteJob = async (id: string) => {
   const url = `${BASE_URL}/jobs/${id}`;
   // ডিবাগ — ব্রাউজার কনসোলে দেখা যাবে
