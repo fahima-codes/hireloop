@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { formatSalary } from '@/app/(main)/BrowseJobs/components/JobCard';
 import { textFaint, textMuted, textPrimary } from '@/lib/constants/ui';
 import type { JobApiDoc } from '@/lib/types/jobs';
+import type { ApplicationFormData } from '@/lib/types/applications';
 import { useSession } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
 import { applyToAJob } from '@/lib/actions/applications';
@@ -45,33 +46,49 @@ export function JobDetailsView({ job }: { job: JobApiDoc }) {
       // route-টা /BrowseJobs/[id] — lowercase /browse-jobs লিখলে Next 404 দেয়
       router.push(`/sign-in?redirectTo=/BrowseJobs/${job._id}`);
       return;
-    } else if (user.role === 'seeker') {
-      // save the applicatin to the database
-      //TODO:only send jobId and userId or email address for the application
-      const application = {
-        jobId: job._id,
-        userId: user.id,
-        email: user.email,
-        name: user.name,
-        jobTitle: job.title,
-        company: job.company,
-      };
-      const result = await applyToAJob(application);
-      if (result.insertedId) {
-        console.log('Application submitted successfully');
-        router.push('/browseJobs');
-      }
-    } else {
-      console.log('user is not  a job seeker');
     }
 
-    const handleSave = () => {};
-    const handleVisitWebsite = () => {};
+    if (user.role === 'seeker') {
+      // save the application to the database — job doc + session user থেকে পুরো তথ্য
+      // (denormalize করা হয়, কারণ My Applications টেবিলে এই ফিল্ডগুলোই দেখাতে হয়)
+      const application: ApplicationFormData = {
+        jobId: job._id,
+        jobTitle: job.title,
+        company: job.company,
+        category: job.category,
+        jobType: job.jobType,
+        location: job.location,
+        salaryMin: job.salaryMin,
+        salaryMax: job.salaryMax,
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        // requirements.md-র status flow-র শুরু — পরে recruiter আপডেট করবে
+        status: 'Applied',
+        appliedAt: new Date().toISOString(),
+      };
+      try {
+        const result = await applyToAJob(application);
+        if (result.insertedId) {
+          console.log('Application submitted successfully');
+          // route-টা /BrowseJobs — lowercase /browseJobs লিখলে Next 404 দেয়
+          router.push('/BrowseJobs');
+        }
+      } catch (e) {
+        console.error('[ApplyJob] failed —', e);
+      }
+    } else {
+      console.log('user is not a job seeker');
+    }
+  };
 
-    const responsibilities = toList(job.responsibilities);
-    const requirements = toList(job.requirements);
+  const handleSave = () => {};
+  const handleVisitWebsite = () => {};
 
-    const stats = [
+  const responsibilities = toList(job.responsibilities);
+  const requirements = toList(job.requirements);
+
+  const stats = [
       {
         icon: Banknote,
         label: 'Salary Range',
@@ -246,5 +263,4 @@ export function JobDetailsView({ job }: { job: JobApiDoc }) {
         </div>
       </div>
     );
-  };
 }
