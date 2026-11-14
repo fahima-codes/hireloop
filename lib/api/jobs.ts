@@ -16,18 +16,39 @@ export const getJobs = async (query = ''): Promise<JobApiDoc[]> => {
   // API বা তো সরাসরি array দেয়, নয়তো { jobs: [...] } ভেতরে
   return Array.isArray(data) ? data : (data.jobs ?? []);
 };
+// আগে `GET /jobs?id=...` কল করা হচ্ছিল — কিন্তু ব্যাকএন্ড query param-টা ignore করে
+// পুরো job list ফেরত দেয়, আর আমরা jobs[0] নিয়ে নিতাম — তাই যে কার্ডেই click করি
+// সবসময় প্রথম job-ই দেখাত। ব্যাকএন্ডে আলাদা REST endpoint (`GET /jobs/:id`) আছে
+// (deleteJob-ও এই style-ই use করে) — সেটাই call করছি।
+export const getJobById = async (
+  jobId: string,
+): Promise<JobApiDoc | null> => {
+  const res = await fetch(`${BASE_URL}/jobs/${encodeURIComponent(jobId)}`, {
+    cache: 'no-store',
+  });
 
-export const getJob = async (id: string): Promise<JobApiDoc | null> => {
-  // ব্যাকএন্ডে আলাদা single-job endpoint নেই — query param দিয়ে filter করলে array আসে
-  const res = await fetch(
-    `${BASE_URL}/jobs?id=${encodeURIComponent(id)}`,
-  );
+  // job না পেলে (ভুল id বা ডিলিট হয়ে গেলে) page-এর notFound() কাজ করার জন্য
+  // throw না করে null ফেরত দিই
   if (!res.ok) {
-    throw new Error(`Failed to load job (${res.status})`);
+    return null;
   }
   const data = await res.json();
-  // API বা তো সরাসরি array দেয়, নয়তো { jobs: [...] } ভেতরে — প্রথমটাই আমাদের job
-  const jobs = Array.isArray(data) ? data : (data.jobs ?? []);
+  // কিছু ব্যাকএন্ড খালি body দেয় — সেক্ষেত্রে null
+  const job = data && typeof data === 'object' && !Array.isArray(data)
+    ? (data.jobs?.[0] ?? data)
+    : (data?.[0] ?? null);
+  return (job as JobApiDoc) ?? null;
+};
+
+export const getJob = async (id: string): Promise<JobApiDoc | null> => {
+  // আলাদা single-job endpoint (`GET /jobs/:id`) use করছি — `?id=` query param
+  // ব্যাকএন্ড ignore করে পুরো list ফেরত দেয়
+  const res = await fetch(`${BASE_URL}/jobs/${encodeURIComponent(id)}`);
+  if (!res.ok) {
+    return null;
+  }
+  const data = await res.json();
+  const jobs = Array.isArray(data) ? data : (data.jobs ?? [data]);
   return jobs[0] ?? null;
 };
 

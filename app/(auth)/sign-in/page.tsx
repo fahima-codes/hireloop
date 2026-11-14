@@ -2,6 +2,7 @@
 
 import { authClient } from '@/lib/auth-client';
 import { AuthForm } from '../auth-form'; // 👈 ২. সঠিক ইম্পোর্ট পাথ
+import { useSearchParams } from 'next/navigation';
 
 // ৩. এখানেই ফর্মের ডেটা টাইপটি ডিফাইন করে দেওয়া হলো
 interface AuthFormData {
@@ -10,11 +11,14 @@ interface AuthFormData {
 }
 
 export default function SignInPage() {
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirectTo') ?? '/';
+  console.log('redirectTo', redirectTo);
   const handleSignIn = async (data: AuthFormData) => {
     const { data: signInResponse, error } = await authClient.signIn.email({
       email: data.email,
       password: data.password,
-      callbackURL: '/',
+      callbackURL: redirectTo,
     });
 
     console.log('signIn response', signInResponse, error);
