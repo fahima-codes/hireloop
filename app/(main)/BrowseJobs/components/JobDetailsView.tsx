@@ -17,10 +17,8 @@ import Link from 'next/link';
 import { formatSalary } from '@/app/(main)/BrowseJobs/components/JobCard';
 import { textFaint, textMuted, textPrimary } from '@/lib/constants/ui';
 import type { JobApiDoc } from '@/lib/types/jobs';
-import type { ApplicationFormData } from '@/lib/types/applications';
 import { useSession } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
-import { applyToAJob } from '@/lib/actions/applications';
 
 // responsibilities/requirements টেক্সট ফিল্ড — নতুন লাইন/সেমিকোলন দিয়ে ভেঙে bullet লিস্ট বানায়
 const toList = (raw: string) =>
@@ -41,7 +39,9 @@ export function JobDetailsView({ job }: { job: JobApiDoc }) {
   const router = useRouter();
   const user = session?.user;
 
-  const handleApply = async () => {
+  // pay-to-apply ফ্লো — apply করার আগে পেমেন্ট নিতে হবে, তাই সরাসরি apply নয়।
+  // পেমেন্ট সফল হলে (Stripe integration-এর পরে) তখনই application ডাটাবেসে তৈরি হবে
+  const handleApply = () => {
     if (!user) {
       // route-টা /BrowseJobs/[id] — lowercase /browse-jobs লিখলে Next 404 দেয়
       router.push(`/sign-in?redirectTo=/BrowseJobs/${job._id}`);
@@ -49,34 +49,8 @@ export function JobDetailsView({ job }: { job: JobApiDoc }) {
     }
 
     if (user.role === 'seeker') {
-      // save the application to the database — job doc + session user থেকে পুরো তথ্য
-      // (denormalize করা হয়, কারণ My Applications টেবিলে এই ফিল্ডগুলোই দেখাতে হয়)
-      const application: ApplicationFormData = {
-        jobId: job._id,
-        jobTitle: job.title,
-        company: job.company,
-        category: job.category,
-        jobType: job.jobType,
-        location: job.location,
-        salaryMin: job.salaryMin,
-        salaryMax: job.salaryMax,
-        userId: user.id,
-        name: user.name,
-        email: user.email,
-        // requirements.md-র status flow-র শুরু — পরে recruiter আপডেট করবে
-        status: 'Applied',
-        appliedAt: new Date().toISOString(),
-      };
-      try {
-        const result = await applyToAJob(application);
-        if (result.insertedId) {
-          console.log('Application submitted successfully');
-          // route-টা /BrowseJobs — lowercase /browseJobs লিখলে Next 404 দেয়
-          router.push('/BrowseJobs');
-        }
-      } catch (e) {
-        console.error('[ApplyJob] failed —', e);
-      }
+      // payment পেজে নিয়ে যাওয়া হচ্ছে — সেখানেই ইউজারকে pay করতে বলা হবে
+      router.push('/payment');
     } else {
       console.log('user is not a job seeker');
     }
