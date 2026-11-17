@@ -31,14 +31,19 @@ const labelClass = 'mb-1.5 block text-sm font-medium text-zinc-300';
 const cardClass = 'rounded-2xl border border-white/10 bg-white/[0.03] p-6';
 
 // auth-form.tsx-এর হুবহু collect প্যাটার্ন — flat state অবজেক্ট, name দিয়ে generic update
-const emptyJob: JobFormData = {
+// ফর্ম state-এ শুধু ফর্মের ফিল্ডগুলোই — recruiterId ফর্ম ফিল্ড নয়,
+// submit-এর সময় session user থেকে যোগ হয়
+type JobFormValues = Omit<JobFormData, 'recruiterId'>;
+
+const emptyJob: JobFormValues = {
 
   title: '',
   company: '',
   category: '',
   // value গুলো label-ই — SelectValue সরাসরি দেখাতে পারে, কোনো mapping লাগে না
   jobType: 'Full-Time',
-  recruiterId?: session?.user.id ?? '',
+  // recruiterId এখানে রাখা যায় না — মডিউল স্কোপে session নেই,
+  // submit-এর সময় session user থেকে সেট করা হয়
   remoteAllowed: false,
   location: '',
   deadline: '',
@@ -51,8 +56,7 @@ const emptyJob: JobFormData = {
 
 // numbered সেকশন হেডার — স্ক্রিনশটের ভায়োলেট ব্যাজ + টাইটেল প্যাটার্ন
 function SectionHeader({ step, title }: { step: number; title: string }) {
-  const { data: session } = useSession();
-  return ( 
+  return (
     <div className="flex items-center gap-3">
       <span className="flex size-6 items-center justify-center rounded-md border border-indigo-400/30 bg-indigo-500/15 text-xs font-semibold text-indigo-300">
         {step}
@@ -66,7 +70,9 @@ function SectionHeader({ step, title }: { step: number; title: string }) {
 
 export default function NewJobPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState<JobFormData>(emptyJob);
+  // লগইন করা recruiter-এর id — job doc-এর recruiterId হিসেবে পাঠাই
+  const { data: session } = useSession();
+  const [formData, setFormData] = useState<JobFormValues>(emptyJob);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (
@@ -88,17 +94,16 @@ export default function NewJobPage() {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      // TODO: এখানে Mongo/API কল যোগ হবে — আপাতত data collect হয়ে console-এ আসছে
-      console.log('new job data', formData);
+      // router.push আগে করলে createJob শেষ হওয়ার আগেই পেজ বদলে যেত —
+      // তাই আগে await, তারপর navigate
+      await createJob({
+        ...formData,
+        recruiterId: session?.user?.id ?? '',
+      });
       router.push('/dashboard/recruiter/jobs');
     } finally {
       setIsSubmitting(false);
     }
-
-    //
-
-    const result = await createJob(formData);
-    console.log('createJob result:', result);
   };
 
   return (

@@ -19,6 +19,22 @@ export const getApplications = async (
   // API বা তো সরাসরি array দেয়, নয়তো { applications: [...] } ভেতরে
   return Array.isArray(data) ? data : (data.applications ?? []);
 };
+// নির্দিষ্ট একটা job-এর সব application — recruiter-এর job applications পেজের জন্য
+export const getApplicationsByJob = async (
+  jobId: string,
+): Promise<ApplicationApiDoc[]> => {  // ব্যাকএন্ডের GET /applications শুধু ?userId= filter করে — jobId query param
+  // support করে না, তাই পুরো list এনে এখানেই job অনুযায়ী বাছাই করে নিই
+  const res = await fetch(`${BASE_URL}/applications`, { cache: 'no-store' });
+  if (!res.ok) {
+    throw new Error(`Failed to load applications (${res.status})`);
+  }
+  const data = await res.json();
+  const all = Array.isArray(data) ? data : (data.applications ?? []);
+  return all.filter(
+    (app: ApplicationApiDoc) => String(app.jobId) === String(jobId),
+  );
+};
+
 export const getApplicationsCount = async (
   userId = '',
 ): Promise<{ count: number }> => {

@@ -32,7 +32,11 @@ export const getJobById = async (
   if (!res.ok) {
     return null;
   }
-  const data = await res.json();
+  const data = await res
+    .json()
+    // কিছু ব্যাকএন্ড না-পাওয়া id-তে খালি body দেয় — json() crash না করে null
+    // ধরে নিই, যাতে page-এর notFound() কাজ করে (deleteJob-এর মতোই)
+    .catch(() => null);
   // কিছু ব্যাকএন্ড খালি body দেয় — সেক্ষেত্রে null
   const job = data && typeof data === 'object' && !Array.isArray(data)
     ? (data.jobs?.[0] ?? data)

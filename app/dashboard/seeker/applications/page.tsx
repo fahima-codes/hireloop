@@ -11,6 +11,7 @@ import { Eye, Loader2 } from 'lucide-react';
 import { StatusPill } from '@/app/components/StatusPill';
 import { getApplications } from '@/lib/api/applications';
 import { textFaint, textMuted, textPrimary } from '@/lib/constants/ui';
+import { timeAgo } from '@/lib/utils/dates';
 import type { ApplicationApiDoc, ApplicationStatus } from '@/lib/types/applications';
 
 const STATUS_TABS = [
@@ -22,22 +23,6 @@ const STATUS_TABS = [
   'Offered',
 ] as const;
 type StatusTab = (typeof STATUS_TABS)[number];
-
-// Date Applied — relative format ("5 days ago", requirements.md অনুযায়ী)
-const rtf = new Intl.RelativeTimeFormat('en-US', { numeric: 'auto' });
-function timeAgo(iso: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  // invalid/missing date → NaN — RelativeTimeFormat crash করে, তাই আগেই ধরে নিই
-  if (!Number.isFinite(diffMs)) return '—';
-  const minutes = Math.round(diffMs / 60_000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return rtf.format(-minutes, 'minute');
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return rtf.format(-hours, 'hour');
-  const days = Math.round(hours / 24);
-  if (days < 30) return rtf.format(-days, 'day');
-  return rtf.format(-Math.round(days / 30), 'month');
-}
 
 // API document → টেবিলের row — পুরনো/টেস্ট ডকুমেন্টে appliedAt/status মিসিং থাকলে ডিফল্ট
 // ObjectId-র প্রথম ৪ বাইট = তৈরির টাইমস্ট্যাম্প — manage jobs-এর toManagedJob-এর মতোই fallback

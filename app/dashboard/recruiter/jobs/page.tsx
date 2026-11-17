@@ -23,7 +23,6 @@ import { jobCategories, jobStatuses } from '@/lib/constants/jobs';
 import { textFaint, textMuted, textPrimary } from '@/lib/constants/ui';
 import { deleteJob, getJobs } from '@/lib/api/jobs';
 import type { JobApiDoc, JobStatus, ManagedJob } from '@/lib/types/jobs';
-import { getSession } from '@/lib/core/server';
 
 const inputClass =
   'h-[38px] w-full rounded-xl border-white/10 bg-[#0c0c0f] text-sm text-[#ededef] focus-visible:border-white/20';
@@ -55,7 +54,7 @@ const dateFmt = new Intl.DateTimeFormat('en-US', {
   year: 'numeric',
 });
 
-export  default  function async ManageJobsPage () {
+export default function ManageJobsPage() {
   const [jobs, setJobs] = useState<ManagedJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -144,8 +143,6 @@ export  default  function async ManageJobsPage () {
     totalViews > 0
       ? `${((totalApplicants / totalViews) * 100).toFixed(1)}%`
       : '—';
-  const session = await getSession()
-  const jobs: jobRow[] = await getJobs(`recruiterId=${session?.user.id}`);
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-8">
       {/* হেডার — টাইটেল + ডানপাশে Create Job (Figma: সাদা বাটন) */}
@@ -340,6 +337,15 @@ export  default  function async ManageJobsPage () {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
+                        {/* এই job-এর applicant তালিকা — dedicated applications পেজে নিয়ে যায় */}
+                        <Link
+                          href={`/dashboard/recruiter/jobs/${job._id}/applications`}
+                          aria-label={`View applications for ${job.title}`}
+                          title="View applications"
+                          className="flex size-8 items-center justify-center rounded-lg text-[#c4c7c8] transition-colors hover:bg-white/10 hover:text-white"
+                        >
+                          <Users className="size-4" />
+                        </Link>
                         <IconButton
                           label={`View ${job.title}`}
                           title="View job post"
