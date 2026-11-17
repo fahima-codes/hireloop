@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { MongoClient } from 'mongodb';
 import { mongodbAdapter } from 'better-auth/adapters/mongodb';
+import { admin } from 'better-auth/plugins';
 const client = new MongoClient(process.env.BETTER_AUTH_DB_URL as string);
 
 const db = client.db('hireloopdb');
@@ -27,4 +28,5 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     },
   },
+  plugins: [admin()],
 });

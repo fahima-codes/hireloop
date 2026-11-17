@@ -3,8 +3,9 @@
 
 import type { ApplicationStatus } from '@/lib/types/applications';
 import type { JobStatus } from '@/lib/types/jobs';
+import type { UserStatus } from '@/lib/types/users';
 
-type PillStatus = JobStatus | ApplicationStatus;
+type PillStatus = JobStatus | ApplicationStatus | UserStatus;
 
 // প্রতিটা স্ট্যাটাসের রঙ — background/dot/text তিনটাই একই hue-র হালকা ভার্সন
 const toneByStatus: Record<PillStatus, string> = {
@@ -17,6 +18,8 @@ const toneByStatus: Record<PillStatus, string> = {
   Shortlisted: '#a855f7',
   Rejected: '#ef4444',
   Offered: '#22c55e',
+  // user statuses — admin-এর user management টেবিলের জন্য
+  Suspended: '#ef4444',
 };
 
 export function StatusPill({ status }: { status: PillStatus }) {

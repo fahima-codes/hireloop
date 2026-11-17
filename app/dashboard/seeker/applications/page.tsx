@@ -10,18 +10,13 @@ import { Eye, Loader2 } from 'lucide-react';
 
 import { StatusPill } from '@/app/components/StatusPill';
 import { getApplications } from '@/lib/api/applications';
+import { applicationStatuses } from '@/lib/constants/applications';
 import { textFaint, textMuted, textPrimary } from '@/lib/constants/ui';
 import { timeAgo } from '@/lib/utils/dates';
 import type { ApplicationApiDoc, ApplicationStatus } from '@/lib/types/applications';
 
-const STATUS_TABS = [
-  'All',
-  'Applied',
-  'Under Review',
-  'Shortlisted',
-  'Rejected',
-  'Offered',
-] as const;
+// ট্যাব লিস্ট শেয়ারড কনস্ট্যান্ট থেকে — 'All' শুধু এই পেজের ফিল্টারের জন্য
+const STATUS_TABS = ['All', ...applicationStatuses] as const;
 type StatusTab = (typeof STATUS_TABS)[number];
 
 // API document → টেবিলের row — পুরনো/টেস্ট ডকুমেন্টে appliedAt/status মিসিং থাকলে ডিফল্ট

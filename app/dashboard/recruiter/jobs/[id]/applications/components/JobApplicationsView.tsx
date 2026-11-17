@@ -5,14 +5,26 @@
 // ডাটা server page থেকে props-এ আসে — applicant-এর স্ট্যাটাস আপডেট (DB mutation)
 // পরে এই view-তেই যোগ হবে
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 
 import { StatusPill } from '@/app/components/StatusPill';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { updateApplicationStatus } from '@/lib/api/applications';
+import { applicationStatuses } from '@/lib/constants/applications';
 import { textFaint, textMuted, textPrimary } from '@/lib/constants/ui';
 import { timeAgo } from '@/lib/utils/dates';
-import type { ApplicationApiDoc } from '@/lib/types/applications';
+import type {
+  ApplicationApiDoc,
+  ApplicationStatus,
+} from '@/lib/types/applications';
 import type { JobApiDoc } from '@/lib/types/jobs';
 
 type JobApplicationsViewProps = {
@@ -33,6 +45,38 @@ export function JobApplicationsView({
       ),
     [applications],
   );
+
+  // সার্স-অব-ট্রুথ থাকে props-এ — এখানে শুধু সফল আপডেটের status ওভাররাইড রাখি
+  // (key = application _id)। না করলে id বদলে navigate করলে পুরনো state আটকে থাকত।
+  const [updatedStatuses, setUpdatedStatuses] = useState<
+    Record<string, ApplicationStatus>
+  >({});
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // ড্রপডাউন বদলালেই DB-তে PATCH — সফল হলে ওভাররাইডে রাখি, ব্যর্থ হলে এরর দেখাই
+  const handleStatusChange = (
+    app: ApplicationApiDoc,
+    next: ApplicationStatus,
+  ) => {
+    if (next === (updatedStatuses[app._id] ?? app.status)) return;
+    setError(null);
+    setPendingId(app._id);
+    updateApplicationStatus(app._id, next)
+      .then(() => {
+        setUpdatedStatuses(prev => ({ ...prev, [app._id]: next }));
+      })
+      .catch((e: unknown) => {
+        setError(
+          e instanceof Error
+            ? e.message
+            : 'Something went wrong updating the status',
+        );
+      })
+      .finally(() => {
+        setPendingId(null);
+      });
+  };
 
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-8">
@@ -55,6 +99,11 @@ export function JobApplicationsView({
           {sortedApplications.length === 1 ? 'applicant' : 'applicants'}
         </p>
       </header>
+
+      {/* status আপডেট ব্যর্থ হলে এরর বার্তা (manage jobs-এর মতোই) */}
+      {error && (
+        <p className="mt-5 text-sm text-[#f59e0b]">{error}</p>
+      )}
 
       {/* ডাটা টেবিল — মোবাইলে হরিজন্টাল স্ক্রল (অন্য dashboard টেবিলের মতোই) */}
       <section className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-[#141418]">
@@ -121,9 +170,43 @@ export function JobApplicationsView({
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <StatusPill status={app.status} />
-                      {/* TODO: স্ট্যাটাস আপডেট কন্ট্রোল এখানে বসবে —
-                          DB mutation (recruiter status update) পরে যোগ হবে */}
+                      <div className="flex items-center gap-2">
+                        <StatusPill
+                          status={updatedStatuses[app._id] ?? app.status}
+                        />
+                        {/* recruiter-এর status আপডেট — বদলালেই PATCH /applications/:id চলে */}
+                        <Select
+                          value={updatedStatuses[app._id] ?? app.status}
+                          onValueChange={value =>
+                            handleStatusChange(
+                              app,
+                              value as ApplicationStatus,
+                            )
+                          }
+                        >
+                          <SelectTrigger
+                            aria-label={`Update status for ${app.name}`}
+                            disabled={pendingId === app._id}
+                            className="h-8 w-[130px] rounded-lg border-white/10 bg-[#1a1a1f] text-xs"
+                          >
+                            {pendingId === app._id ? (
+                              <span className="flex items-center gap-1.5">
+                                <Loader2 className="size-3 animate-spin" />
+                                Saving…
+                              </span>
+                            ) : (
+                              <SelectValue />
+                            )}
+                          </SelectTrigger>
+                          <SelectContent>
+                            {applicationStatuses.map(status => (
+                              <SelectItem key={status} value={status}>
+                                {status}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </td>
                   </tr>
                 ))

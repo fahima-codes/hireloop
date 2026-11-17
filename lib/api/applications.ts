@@ -1,7 +1,10 @@
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
 
-import type { ApplicationApiDoc } from '@/lib/types/applications';
+import type {
+  ApplicationApiDoc,
+  ApplicationStatus,
+} from '@/lib/types/applications';
 
 // টাইপ এখন শেয়ারড জায়গায় — lib/types/applications.ts থেকে রি-এক্সপোর্ট
 export type { ApplicationApiDoc } from '@/lib/types/applications';
@@ -41,4 +44,20 @@ export const getApplicationsCount = async (
   const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
   const res = await fetch(`${BASE_URL}/applications/count?${query}`);
   return res.json();
+};
+
+// recruiter-এর status আপডেট — ব্যাকএন্ডের PATCH /applications/:id ডাকে,
+// Mongo-র updateOne দিয়ে শুধু status ফিল্ড বদলায়
+export const updateApplicationStatus = async (
+  id: string,
+  status: ApplicationStatus,
+): Promise<void> => {
+  const res = await fetch(`${BASE_URL}/applications/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to update application status (${res.status})`);
+  }
 };

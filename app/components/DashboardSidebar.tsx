@@ -24,14 +24,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-type MenuItem = {
-  id: string;
-  name: string;
-  url: string;
-  icon: React.ComponentType<{ className?: string }>; // auth-form.tsx-এর icon টাইপ প্যাটার্ন
-};
-
-type UserRole = 'seeker' | 'recruiter' | 'admin'; // lib/auth.ts-এর role additionalField অনুযায়ী
+import type { MenuItem } from '@/lib/types/navigation';
+import type { UserRole } from '@/lib/types/users';
 
 // প্রতিটি রোলের সাইডবার মেনু — url গুলো app/dashboard/<role>/... রাউটের সাথে ম্যাপ করা
 const menuItemsByRole: Record<UserRole, MenuItem[]> = {
