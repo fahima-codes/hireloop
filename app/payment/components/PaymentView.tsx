@@ -1,7 +1,7 @@
 'use client';
 
-// Stripe Checkout sandbox-এর হুবহু ডিজাইন রেপ্লিকা — এখনই শুধু UI,
-// আসল Stripe payment ইন্টিগ্রেশন পরে বসবে (handlePay ইচ্ছাকৃতভাবে খালি লজিক)
+// Stripe Checkout sandbox-এর হুবহু ডিজাইন রেপ্লিকা — Pay বাটনের form জমা দিলে
+// /api/checkout_sessions route-এ POST হয়, সেখান থেকে Stripe-এর hosted checkout-এ redirect হয়
 
 import { useState } from 'react';
 import {
@@ -51,13 +51,21 @@ const formatCardNumber = (raw: string) =>
 // MM/YY ফরম্যাট — ২ ডিজিটের পরে স্ল্যাশ বসে
 const formatExpiry = (raw: string) => {
   const digits = raw.replace(/\D/g, '').slice(0, 4);
-  return digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
+  return digits.length > 2
+    ? `${digits.slice(0, 2)}/${digits.slice(2)}`
+    : digits;
 };
 
 // CVC — সর্বোচ্চ ৪ ডিজিট
 const formatCvc = (raw: string) => raw.replace(/\D/g, '').slice(0, 4);
 
-export function PaymentView() {
+export default function PaymentView({
+  canceled,
+  jobId,
+}: {
+  canceled?: string;
+  jobId?: string;
+}) {
   const [currency, setCurrency] = useState<Currency>('BDT');
   const [email, setEmail] = useState('');
   const [cardNumber, setCardNumber] = useState('');
@@ -66,11 +74,6 @@ export function PaymentView() {
   const [cardholder, setCardholder] = useState('');
   const [country, setCountry] = useState('Bangladesh');
   const [saveInfo, setSaveInfo] = useState(true);
-
-  // TODO: এখানে Stripe checkout সেশন তৈরি করে pay করানো হবে — পরে ইন্টিগ্রেট হবে
-  const handlePay = () => {
-    console.log('[Payment] Stripe integration pending', { currency, email });
-  };
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
@@ -85,6 +88,13 @@ export function PaymentView() {
         <span aria-hidden>/</span>
         <span>Checkout — Stripe Payment</span>
       </nav>
+
+      {/* cancel_url থেকে ফিরে এলে user-কে জানানো হয় payment বাতিল হয়েছে */}
+      {canceled && (
+        <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+          Your checkout was canceled — you can pay whenever you&apos;re ready.
+        </div>
+      )}
 
       {/* ---------- Checkout কার্ড ---------- */}
       <section className="mt-3 overflow-hidden rounded-xl shadow-2xl">
@@ -233,7 +243,9 @@ export function PaymentView() {
                         autoComplete="cc-csc"
                         placeholder="CVC"
                         value={cvc}
-                        onChange={event => setCvc(formatCvc(event.target.value))}
+                        onChange={event =>
+                          setCvc(formatCvc(event.target.value))
+                        }
                         className={`${inputClass} rounded-none border-0 pr-8`}
                       />
                       <CircleHelp
@@ -292,13 +304,20 @@ export function PaymentView() {
               </span>
             </label>
 
-            <button
-              type="button"
-              onClick={handlePay}
-              className="mt-4 h-11 w-full rounded-md bg-[#0570de] text-sm font-medium text-white transition-colors hover:bg-[#0668cc]"
-            >
-              Pay
-            </button>
+            {/* Stripe Checkout — form submit করলে /api/checkout_sessions POST হয়,
+                route handler 303 redirect-এ Stripe-এর hosted checkout page-এ পাঠিয়ে দেয়
+                jobId — কোন job-এর জন্য pay করা হচ্ছে; success_url-এ এটাই বহন হয় */}
+            <form action="/api/checkout_sessions" method="POST">
+              <input type="hidden" name="currency" value={currency} />
+              {jobId && <input type="hidden" name="jobId" value={jobId} />}
+              <button
+                type="submit"
+                role="link"
+                className="mt-4 h-11 w-full rounded-md bg-[#0570de] text-sm font-medium text-white transition-colors hover:bg-[#0668cc]"
+              >
+                Pay
+              </button>
+            </form>
           </div>
         </div>
 

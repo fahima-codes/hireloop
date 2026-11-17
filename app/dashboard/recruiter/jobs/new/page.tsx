@@ -23,6 +23,7 @@ import {
   salaryFrequencies,
 } from '@/lib/constants/jobs';
 import type { JobFormData } from '@/lib/types/jobs';
+import { useSession } from '@/lib/auth-client';
 
 const inputClass =
   'h-10 w-full rounded-xl border-white/10 bg-white/[0.04] text-sm text-zinc-100 placeholder:text-zinc-500 focus-visible:border-white/20';
@@ -31,11 +32,13 @@ const cardClass = 'rounded-2xl border border-white/10 bg-white/[0.03] p-6';
 
 // auth-form.tsx-এর হুবহু collect প্যাটার্ন — flat state অবজেক্ট, name দিয়ে generic update
 const emptyJob: JobFormData = {
+
   title: '',
   company: '',
   category: '',
   // value গুলো label-ই — SelectValue সরাসরি দেখাতে পারে, কোনো mapping লাগে না
   jobType: 'Full-Time',
+  recruiterId?: session?.user.id ?? '',
   remoteAllowed: false,
   location: '',
   deadline: '',
@@ -48,7 +51,8 @@ const emptyJob: JobFormData = {
 
 // numbered সেকশন হেডার — স্ক্রিনশটের ভায়োলেট ব্যাজ + টাইটেল প্যাটার্ন
 function SectionHeader({ step, title }: { step: number; title: string }) {
-  return (
+  const { data: session } = useSession();
+  return ( 
     <div className="flex items-center gap-3">
       <span className="flex size-6 items-center justify-center rounded-md border border-indigo-400/30 bg-indigo-500/15 text-xs font-semibold text-indigo-300">
         {step}

@@ -21,7 +21,7 @@ export const getApplications = async (
 };
 export const getApplicationsCount = async (
   userId = '',
-): Promise<ApplicationApiDoc[]> => {
+): Promise<{ count: number }> => {
   const query = userId ? `?userId=${encodeURIComponent(userId)}` : '';
   const res = await fetch(`${BASE_URL}/applications/count?${query}`);
   return res.json();

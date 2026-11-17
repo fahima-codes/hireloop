@@ -5,6 +5,7 @@ export type JobStatus = 'Active' | 'Closed';
 
 // ফর্ম থেকে পাঠানো ফিল্ড — create job ও manage jobs দুই জায়গাতেই ব্যবহৃত
 export type JobFormData = {
+  recruiterId: string;
   title: string;
   company: string;
   category: string;
